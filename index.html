@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مهمتي - إدارة الفروع والأصناف</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f7fb;color:#10233f}
+.app{max-width:480px;margin:auto;min-height:100vh;background:#f4f7fb}
+header{background:#102b4c;color:white;padding:24px 18px 20px;border-radius:0 0 24px 24px}
+header h1{margin:0 0 6px;font-size:24px}.muted{opacity:.75;font-size:13px}
+main{padding:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:white;border-radius:16px;padding:15px;box-shadow:0 3px 14px #102b4c12;margin-bottom:12px}
+.stat b{font-size:25px;display:block;margin:5px 0}.red{background:#fff0f0}.orange{background:#fff7e7}.green{background:#edfbf2}.blue{background:#edf5ff}
+h2{font-size:18px;margin:18px 0 10px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.item{padding:12px 0;border-bottom:1px solid #edf0f5}.item:last-child{border:0}
+.badge{padding:5px 9px;border-radius:10px;font-size:12px;font-weight:bold;white-space:nowrap}.danger{background:#ffe0e0;color:#b42318}.warn{background:#fff0c7;color:#9a6700}.ok{background:#dff7e7;color:#16733c}
+button{border:0;border-radius:12px;padding:11px 14px;background:#1674e8;color:white;font-weight:bold;cursor:pointer}
+.secondary{background:#e9f1fb;color:#174b7e}input,select{width:100%;padding:12px;border:1px solid #d8e0ea;border-radius:10px;margin:5px 0 10px;background:white}
+nav{position:sticky;bottom:0;background:white;border-top:1px solid #e4e8ee;display:flex;justify-content:space-around;padding:9px}
+nav button{background:none;color:#49627f;padding:7px;font-size:12px}nav button.active{color:#1674e8}
+.page{display:none}.page.active{display:block}
+.notice{border-right:4px solid #e23b3b}.schedule{border-right:4px solid #1674e8}
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#102b4c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="muted">إدارة الشغل اليومية</div>
+  <h1>صباح الخير 👋</h1>
+  <div id="date"></div>
+</header>
+
+<main>
+<section id="home" class="page active">
+  <div class="grid" style="margin-top:14px">
+    <div class="card stat red"><span>قريب الانتهاء</span><b id="expiring">0</b><small>خلال 5 أيام</small></div>
+    <div class="card stat orange"><span>الفروع</span><b id="branchesCount">0</b><small>مسجلة</small></div>
+    <div class="card stat green"><span>مهام اليوم</span><b id="tasksCount">0</b><small>مكتملة/مطلوبة</small></div>
+    <div class="card stat blue"><span>أصناف</span><b id="productsCount">0</b><small>إجمالي</small></div>
+  </div>
+  <h2>تنبيهات مهمة 🔔</h2>
+  <div id="alerts"></div>
+  <h2>جدول اليوم 📅</h2>
+  <div class="card schedule">
+    <div class="row"><b>مراجعة الأصناف القريبة من الانتهاء</b><span class="badge warn">أولوية</span></div>
+    <p class="muted">ابدأ بالفروع التي تحتوي على أصناف ستنتهي خلال 5 أيام.</p>
+  </div>
+</section>
+
+<section id="products" class="page">
+  <h2>الأصناف 📦</h2>
+  <div class="card">
+    <label>اسم الصنف</label><input id="pname" placeholder="مثال: حليب كامل الدسم">
+    <label>الفرع</label><select id="pbranch"></select>
+    <label>الكمية</label><input id="pqty" type="number" min="0" placeholder="0">
+    <label>تاريخ الانتهاء</label><input id="pexp" type="date">
+    <button onclick="addProduct()">+ إضافة الصنف</button>
+  </div>
+  <div id="productList"></div>
+</section>
+
+<section id="branches" class="page">
+  <h2>الفروع 🏪</h2>
+  <div class="card">
+    <label>اسم الفرع</label><input id="bname" placeholder="مثال: فرع مدينة نصر">
+    <button onclick="addBranch()">+ إضافة فرع</button>
+  </div>
+  <div id="branchList"></div>
+</section>
+
+<section id="today" class="page">
+  <h2>جدول اليوم 📅</h2>
+  <div class="card">
+    <b>إدارة زيارات اليوم</b>
+    <p class="muted">الفروع ذات الأصناف القريبة من الانتهاء تظهر أولًا.</p>
+    <div id="todayList"></div>
+  </div>
+</section>
+
+<section id="settings" class="page">
+  <h2>الإعدادات ⚙️</h2>
+  <div class="card">
+    <b>تنبيهات الانتهاء</b>
+    <p class="muted">التطبيق يعتبر الصنف قريب الانتهاء عندما يتبقى العدد المحدد من الأيام أو أقل.</p>
+    <label>التنبيه قبل كام يوم؟</label>
+    <input id="alertDays" type="number" min="1" max="30" value="5" onchange="saveSettings()">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      <input id="alertEnabled" type="checkbox" checked onchange="saveSettings()" style="width:auto">
+      تفعيل تنبيهات الانتهاء
+    </label>
+  </div>
+  <div class="card">
+    <b>تثبيت مهمتي على الموبايل 📱</b>
+    <p class="muted">من Chrome اختَر «إضافة إلى الشاشة الرئيسية» بعد فتح النسخة المستضافة.</p>
+    <button onclick="requestNotifications()">🔔 تفعيل الإشعارات</button>
+  </div>
+  <div class="card">
+    <b>حالة التطبيق</b>
+    <p class="muted">التنبيهات المحلية الفعلية على Android سيتم ربطها في مرحلة بناء APK.</p>
+    <div class="row"><span>حالة البيانات</span><span class="badge ok">محفوظة على الجهاز</span></div>
+  </div>
+</section>
+
+</main>
+
+<nav>
+  <button class="active" onclick="show('home',this)">🏠<br>الرئيسية</button>
+  <button onclick="show('branches',this)">🏪<br>الفروع</button>
+  <button onclick="show('products',this)">📦<br>الأصناف</button>
+  <button onclick="show('today',this)">📅<br>اليوم</button><button onclick="show('settings',this)">⚙️<br>إعدادات</button>
+</nav>
+</div>
+
+<script>
+const KEY='mohamty_v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'{"branches":[],"products":[],"tasks":[],"visits":{},"times":{}}');
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data)); render();}
+function today(){return new Date().toISOString().slice(0,10)}
+function daysLeft(d){return Math.ceil((new Date(d+'T23:59:59')-new Date())/86400000)}
+function show(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');render()}
+function addBranch(){let n=document.getElementById('bname').value.trim();if(!n)return alert('اكتب اسم الفرع');data.branches.push({id:Date.now(),name:n});document.getElementById('bname').value='';save()}
+function addProduct(){
+ let name=pname.value.trim(), branch=+pbranch.value, qty=+pqty.value||0, exp=pexp.value;
+ if(!name||!branch||!exp)return alert('أكمل بيانات الصنف');
+ data.products.push({id:Date.now(),name,branch,qty,exp});pname.value='';pqty.value='';pexp.value='';save()
+}
+function remove(type,id){data[type]=data[type].filter(x=>x.id!==id);save()}
+function visitKey(id){return new Date().toISOString().slice(0,10)+'_'+id}
+function visitDone(id){return !!(data.visits||{})[visitKey(id)]}
+function toggleVisit(id){data.visits=data.visits||{};let k=visitKey(id);data.visits[k]=!data.visits[k];save()}
+function setTime(id,v){data.times=data.times||{};data.times[visitKey(id)]=v;save()}
+
+
+function editProduct(id){
+  let p=data.products.find(x=>x.id===id); if(!p)return;
+  let name=prompt('اسم الصنف:',p.name); if(name===null)return;
+  let qty=prompt('الكمية:',p.qty); if(qty===null)return;
+  let exp=prompt('تاريخ الانتهاء YYYY-MM-DD:',p.exp); if(exp===null)return;
+  if(!name.trim()||!exp)return alert('البيانات غير مكتملة');
+  p.name=name.trim(); p.qty=Number(qty)||0; p.exp=exp; save();
+}
+function saveSettings(){
+  data.settings=data.settings||{};
+  data.settings.alertDays=Math.max(1,Math.min(30,Number(document.getElementById('alertDays').value)||5));
+  data.settings.alertEnabled=document.getElementById('alertEnabled').checked;
+  save();
+}
+
+function render(){
+ data.settings=data.settings||{alertDays:5,alertEnabled:true}; document.getElementById('alertDays').value=data.settings.alertDays; document.getElementById('alertEnabled').checked=data.settings.alertEnabled;
+ date.textContent=new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+ branchesCount.textContent=data.branches.length; productsCount.textContent=data.products.length;
+ pbranch.innerHTML=data.branches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+
+ let alertDays=(data.settings&&data.settings.alertDays)||5; let near=data.products.filter(p=>daysLeft(p.exp)<=alertDays);
+ expiring.textContent=near.length;
+
+ alerts.innerHTML=near.length?near.map(p=>{
+   let b=data.branches.find(x=>x.id===p.branch),d=daysLeft(p.exp);
+   return `<div class="card notice"><div class="row"><b>${p.name}</b><span class="badge ${d<=2?'danger':'warn'}">${d<0?'منتهي':d+' أيام'}</span></div><small>${b?.name||'فرع غير معروف'} • الكمية ${p.qty}</small></div>`
+ }).join(''):'<div class="card"><b>ممتاز 🎉</b><p class="muted">لا توجد أصناف ستنتهي خلال 5 أيام.</p></div>';
+
+ let doneCount=data.branches.filter(b=>visitDone(b.id)).length;
+ tasksCount.textContent=`${doneCount}/${data.branches.length}`;
+
+ branchList.innerHTML=data.branches.length?data.branches.map(b=>`
+ <div class="card row"><div><b>${b.name}</b><br><small class="muted">${data.products.filter(p=>p.branch===b.id).length} أصناف</small></div>
+ <button class="secondary" onclick="remove('branches',${b.id})">حذف</button></div>`).join(''):'<div class="card muted">أضف أول فرع.</div>';
+
+ productList.innerHTML=data.products.length?data.products.map(p=>{
+   let b=data.branches.find(x=>x.id===p.branch),d=daysLeft(p.exp),cls=d<=5?'danger':'ok';
+   return `<div class="card item"><div class="row"><b>${p.name}</b><span class="badge ${cls}">${d<0?'منتهي':d<=5?'باقي '+d+' أيام':'سليم'}</span></div>
+   <small>${b?.name||'—'} • الكمية: ${p.qty} • انتهاء: ${p.exp}</small>
+   <div style="margin-top:8px"><button class="secondary" onclick="editProduct(${p.id})">تعديل</button><button class="secondary" onclick="remove('products',${p.id})">حذف</button></div></div>`
+ }).join(''):'<div class="card muted">أضف أول صنف.</div>';
+
+ let sorted=[...data.branches].sort((a,b)=>{
+   let na=data.products.filter(p=>p.branch===a.id&&daysLeft(p.exp)<=5).length;
+   let nb=data.products.filter(p=>p.branch===b.id&&daysLeft(p.exp)<=5).length;
+   return nb-na;
+ });
+ todayList.innerHTML=sorted.length?sorted.map((b,i)=>{
+   let alertDays=(data.settings&&data.settings.alertDays)||5; let n=data.products.filter(p=>p.branch===b.id&&daysLeft(p.exp)<=alertDays).length;
+   let done=visitDone(b.id), t=(data.times||{})[visitKey(b.id)]||'';
+   return `<div class="item" style="${done?'opacity:.55':''}">
+     <div class="row"><b>${i+1}. ${b.name}</b><span class="badge ${done?'ok':n?'danger':'ok'}">${done?'تمت ✓':n?'أولوية':'عادي'}</span></div>
+     <small>${n?`⚠️ مراجعة ${n} أصناف قريبة من الانتهاء`:'مراجعة المخزون والمهام'}</small>
+     <div style="display:flex;gap:7px;margin-top:9px;align-items:center">
+       <input type="time" value="${t}" onchange="setTime(${b.id},this.value)" style="margin:0;flex:1">
+       <button onclick="toggleVisit(${b.id})">${done?'إلغاء الإتمام':'تمت الزيارة ✓'}</button>
+     </div>
+   </div>`
+ }).join(''):'<p class="muted">أضف فروعًا أولًا.</p>';
+}
+render();
+</script>
+
+<script>
+async function requestNotifications(){
+  if(!('Notification' in window)){ alert('المتصفح لا يدعم الإشعارات.'); return; }
+  const p=await Notification.requestPermission();
+  alert(p==='granted'?'تم تفعيل الإشعارات ✅':'لم يتم السماح بالإشعارات.');
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+
+</body>
+</html>

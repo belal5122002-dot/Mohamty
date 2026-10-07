@@ -1,0 +1,12 @@
+{
+  "name": "مهمتي",
+  "short_name": "مهمتي",
+  "description": "إدارة الفروع والأصناف وتواريخ الانتهاء والزيارات اليومية",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "theme_color": "#102b4c",
+  "background_color": "#f4f7fb",
+  "icons": []
+}
